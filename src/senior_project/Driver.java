@@ -1,4 +1,18 @@
+///////////////////////////////////////////////////////////
+//
+// Senior Project: Integration Application
+// Written By: Tyler Estro
+// SUNY Farmingdale (Fall 2014)
+//
+// File Name: Driver.java
+// Purpose: Includes main. Instantiates the main window
+//			of the application.
+//
+///////////////////////////////////////////////////////////
+
 package senior_project;
+
+import javax.swing.JOptionPane;
 
 public class Driver {
 
