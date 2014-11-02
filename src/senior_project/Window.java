@@ -15,6 +15,7 @@ package senior_project;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
@@ -29,12 +30,15 @@ public class Window extends JFrame {
 	private JLabel lowerLabel;
 	private JLabel upperLabel;
 	private JLabel nLabel;
+	private JLabel errorDisplay;
+	private JLabel equationImage;
 	private JTextField funcTextField;
 	private JTextField lowerTextField;
 	private JTextField upperTextField;
 	private JTextField nTextField;
 	private JComboBox nComboBox;
 	private JPanel methodPanel;
+	private JPanel equationImagePanel;
 	private JRadioButton methodButton1;
 	private JRadioButton methodButton2;
 	private JRadioButton methodButton3;
@@ -49,6 +53,7 @@ public class Window extends JFrame {
 	private String lowerLimit;
 	private String userFunc;
 	private String nValue;
+	private String errorString;
 	private JFrame thisFrame = this;
 
 	// function to gather data from all text fields. will handle errors here
@@ -134,7 +139,15 @@ public class Window extends JFrame {
 		//integral display is for testing the solved value
 		JLabel integralDisplay = new JLabel();
 		
-		funcLabel = new JLabel("Input Function:");
+		// adding the equationExample image as a JLabel icon within a JPanel
+		equationImagePanel = new JPanel();
+		equationImagePanel.setLayout(new BorderLayout());
+		equationImage = new JLabel();
+		equationImagePanel.add(equationImage);
+		equationImage.setIcon(new ImageIcon("equationExample.png"));
+		add(equationImagePanel);
+		
+		funcLabel = new JLabel("Input Function: f(x) =");
 		add(funcLabel);
 		funcTextField = new JTextField(25);
 		add(funcTextField);
@@ -155,28 +168,26 @@ public class Window extends JFrame {
 		});
 		add(inputHelpButton);
 		
-		lowerLabel = new JLabel("Input lower limit:");
+		lowerLabel = new JLabel("Lower limit (a):");
 		add(lowerLabel);	
 		lowerTextField = new JTextField(4);
 		add(lowerTextField);
 		
-		upperLabel = new JLabel("Input upper limit:");
+		upperLabel = new JLabel("Upper limit (b):");
 		add(upperLabel);
 		upperTextField = new JTextField(4);
 		add(upperTextField);
 		
 		// drop down list for determining the type of interval selection
-		// when changing these values, change corresponding values in integrationButton
-		// ActionListener method
-		String[] nComboStrings = { "Input Desired Interval Number (n)", 
-				"Input Desired Interval Length (i)" };
+		// when changing nComboStrings, change the ActionListener event below as well
+		String[] nComboStrings = { "Interval Number (n)", "Interval Length (i)" };
 		nComboBox = new JComboBox(nComboStrings);
 		nComboBox.setSelectedIndex(0);
 		nComboBox.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String val;
 				val = (String) nComboBox.getSelectedItem();
-				if(val == "Input Desired Interval Number (n)")
+				if(val == "Interval Number (n)")
 					nSelection = "n";
 				else
 					nSelection = "i";
@@ -219,14 +230,27 @@ public class Window extends JFrame {
 		integrateButton = new JButton(new AbstractAction("Perform Integration") {
 			public void actionPerformed(ActionEvent e) {
 				getData();
-				try {
-					integrateTrapezoid(userFunc);
-				} catch (Exception e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
+				errorDisplay.setText("");
+				if(Double.parseDouble(lowerLimit) >= Double.parseDouble(upperLimit)) {
+					errorString = "The lower limit (a) can not exceed to upper limit (b).";
+					errorDisplay.setText(errorString);
 				}
-			integralDisplay.setText(solvedValue);
-			}			
+				else if (nSelection == "i" && (Double.parseDouble(nValue) >
+						(Double.parseDouble(upperLimit) - Double.parseDouble(lowerLimit)))) {
+					errorString = "The interval length (i) can not be less than the domain. "
+					+ "[upper limit (b) - lower limit (a)]";
+					errorDisplay.setText(errorString);
+				}
+				else {
+					try {
+						integrateTrapezoid(userFunc);
+					} catch (Exception e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					integralDisplay.setText(solvedValue);
+				}
+			}
 		});
 		
 		methodButtonGroup = new ButtonGroup();
@@ -242,9 +266,13 @@ public class Window extends JFrame {
 
 		// test variable
 		add(integralDisplay);
+		// error messages
+		errorDisplay = new JLabel();
+		errorDisplay.setForeground(Color.RED);
+		add(errorDisplay);
 		
 		setSize(600, 300);
-		setTitle("Senior Project: Integration Application by Tyler Estro");
+		setTitle("Integration Tool by Tyler Estro");
 		setDefaultCloseOperation(EXIT_ON_CLOSE);		
 		
 		// temporary layout
