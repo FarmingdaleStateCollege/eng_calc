@@ -45,7 +45,7 @@ public class Window extends JFrame {
 	private JButton inputHelpButton;
 	private JButton integrateButton;
 	private ButtonGroup methodButtonGroup;
-	private String methodSelection = "Method 1";
+	private String methodSelection = "Trapezoidal";
 	// default selection for determining interval length/number
 	private String nSelection = "n";
 	private String solvedValue;
@@ -231,11 +231,17 @@ public class Window extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				getData();
 				errorDisplay.setText("");
-				if(Double.parseDouble(lowerLimit) >= Double.parseDouble(upperLimit)) {
-					errorString = "The lower limit (a) can not exceed to upper limit (b).";
+				if(lowerLimit.equals("") | upperLimit.equals("") | nValue.equals("") |
+						userFunc.equals("")) {
+					errorString = "All fields must be filled out.";
 					errorDisplay.setText(errorString);
 				}
-				else if (nSelection == "i" && (Double.parseDouble(nValue) >
+				else if(Double.parseDouble(lowerLimit) >= Double.parseDouble(upperLimit)) {
+					errorString = "The lower limit (a) can not be equal to or exceed the"
+							+ " upper limit (b).";
+					errorDisplay.setText(errorString);
+				}
+				else if (nSelection == "i" & (Double.parseDouble(nValue) >
 						(Double.parseDouble(upperLimit) - Double.parseDouble(lowerLimit)))) {
 					errorString = "The interval length (i) can not be less than the domain. "
 					+ "[upper limit (b) - lower limit (a)]";
@@ -260,9 +266,10 @@ public class Window extends JFrame {
 		methodButtonGroup.add(methodButton3);
 		methodPanel.add(methodButton1);
 		methodPanel.add(methodButton2);
-		methodPanel.add(methodButton3);
-		methodPanel.add(integrateButton);		
+		methodPanel.add(methodButton3);		
 		add(methodPanel);
+		
+		add(integrateButton);
 
 		// test variable
 		add(integralDisplay);
