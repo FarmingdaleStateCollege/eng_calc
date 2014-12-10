@@ -21,7 +21,6 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-
 import net.sourceforge.jeval.*;
 
 import org.jfree.chart.ChartUtilities;
@@ -40,7 +39,6 @@ import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.data.xy.IntervalXYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
@@ -50,25 +48,29 @@ public class Window extends JFrame {
 	private JLabel funcLabel;
 	private JLabel lowerLabel;
 	private JLabel upperLabel;
-	private JLabel intervalLabel;
 	private JLabel errorDisplay;
 	private JLabel equationImage;
-	private JLabel methodImage;
+	private JLabel titleLabel;
+	private JLabel trapLabel;
+	private JLabel simpsonLabel;
+	private JLabel rombergLabel;
+	private JLabel solutionLabel;
+	private JLabel answerLabel;
+	private JLabel graphSolutionLabel;
+	private JLabel graphAnswerLabel;
 	private JTextField funcTextField;
 	private JTextField lowerTextField;
 	private JTextField upperTextField;
 	private JTextField intervalTextField;
 	private JCheckBox graphCheckBox;
-	private JComboBox nComboBox;
-	private JPanel methodPanel;
+	private JComboBox intervalComboBox;
 	private JPanel equationImagePanel;
-	private JPanel methodImagePanel;
-	private JRadioButton methodButton1;
-	private JRadioButton methodButton2;
-	private JRadioButton methodButton3;
 	private JButton inputHelpButton;
 	private JButton integrateButton;
-	private ButtonGroup methodButtonGroup;
+	private JPanel trapTab;
+	private JPanel simpsonTab;
+	private JPanel rombergTab;
+	private JTabbedPane methodTabbedPane;	
 	private String methodSelection = "Trapezoidal";
 	// default selection for determining interval length/number
 	private String intervalSelection = "n";
@@ -152,16 +154,28 @@ public class Window extends JFrame {
         plot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
         //chart
         JFreeChart chart = new JFreeChart(plot);
-        chart.setTitle("Definite Integral Graph");
         chart.removeLegend();
         // creating a jpeg of the chart
         int width = 640; // Width of the image
         int height = 480; // Height of the image 
-        File lineChart = new File( "LineChart.jpeg" ); 
+        File lineChart = new File( "graph.jpeg" ); 
         ChartUtilities.saveChartAsJPEG(lineChart , chart, width ,height);
+        // creating the pop-up window (JOptionPane) containing the graph
+        graphSolutionLabel = new JLabel("Solution:");
+        graphAnswerLabel = new JLabel(solvedValue);
+		try {
+			BufferedImage graphImage = ImageIO.read(lineChart);
+			JLabel graphLabel = new JLabel(new ImageIcon(graphImage));
+			JOptionPane graphPane = new JOptionPane();
+			graphPane.showMessageDialog(thisFrame, graphLabel, 
+					"Definite Integral Graph", JOptionPane.PLAIN_MESSAGE, null);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 	}
 
-	// function to gather data from all text fields. will handle errors here
+	// Method to gather data from all TextFields
 	private void getData() {
 		upperLimit = upperTextField.getText();
 		lowerLimit = lowerTextField.getText();
@@ -169,7 +183,7 @@ public class Window extends JFrame {
 		intervalValue = intervalTextField.getText();
 	}
 	
-	// this method checks if a String is equivalent to a positive whole number
+	// Method to check if a String is equivalent to a positive whole number
 	public static boolean isWholeNumber(String str) {
         try {
             Integer.parseInt(str);
@@ -194,7 +208,7 @@ public class Window extends JFrame {
 		return true;
 	}
 	
-	// this method checks if a String can be parsed as a double 
+	// Method to check if a String can be parsed as a Double 
     private static boolean isDouble(String str) {
         try {
             Double.parseDouble(str);
@@ -248,8 +262,8 @@ public class Window extends JFrame {
 				num = evalFunc(String.valueOf(xi), userFunc);
 				System.out.println("keke: " + xi);
 				// these lines are for the generating an XYSeries graph
-				//lineSeries.add(num,xi);
-				//barSeries.add(num,xi);
+				lineSeries.add(num,xi);
+				barSeries.add(num,xi);
 				
 				lineData.addValue(num, "f(x)", String.valueOf(xi));
 				// needed to have the same number of categories for these bars to
@@ -306,23 +320,53 @@ public class Window extends JFrame {
 	}
 	
 	public Window() {
-	
-		//integral display is for testing the solved value
-		JLabel integralDisplay = new JLabel();
+		// Label that displays the title of the Application
+		titleLabel = new JLabel("Definite Integral Calculator");
+		titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 20));
 		
-		// adding the equationExample image as a JLabel icon within a JPanel
+		// This font will be used in several other labels
+		Font labelFont = new Font(titleLabel.getFont().getName(), Font.PLAIN, 15);
+
+		// Sample images of each integration method
+		ImageIcon trapImage = new ImageIcon("trapezoidal_image.png");
+		ImageIcon simpsonImage = new ImageIcon("method2_image.png");
+		ImageIcon rombergImage = new ImageIcon("method3_image.png");
+		
+		// Label and Panel containing the Image for the Trapezoidal integration method
+		trapLabel = new JLabel(trapImage);		
+		trapTab = new JPanel();
+		trapTab.add(trapLabel);
+		
+		// Label and Panel containing the Image for Simpson's integration method
+		simpsonLabel = new JLabel(simpsonImage);
+		simpsonTab = new JPanel();
+		simpsonTab.add(simpsonLabel);
+		
+		// Label and Panel containing the Image for Romberg's integration method
+		rombergLabel = new JLabel(rombergImage);
+		rombergTab = new JPanel();
+		rombergTab.add(rombergLabel);
+		
+		// TabbedPane used to select method of integration
+		methodTabbedPane = new JTabbedPane();
+		methodTabbedPane.setFont(labelFont);
+		methodTabbedPane.addTab( "Trapezoidal", trapTab );
+		methodTabbedPane.addTab( "Simpson", simpsonTab );
+		methodTabbedPane.addTab( "Romberg", rombergTab );
+		
+		// Panel and Image for the sample equation image
 		equationImagePanel = new JPanel();
 		equationImagePanel.setLayout(new BorderLayout());
 		equationImage = new JLabel();
 		equationImagePanel.add(equationImage);
 		equationImage.setIcon(new ImageIcon("equation_image.png"));
-		add(equationImagePanel);
 		
-		funcLabel = new JLabel("Input Function: f(x) =");
-		add(funcLabel);
-		funcTextField = new JTextField(25);
-		add(funcTextField);
+		// Label and Textfield for inputting user-defined functions
+		funcLabel = new JLabel("Input Function: f(x)=");
+		funcLabel.setFont(labelFont);
+		funcTextField = new JTextField();
 		
+		// Button that accesses the Function Input Help image in a JOptionPane
 		inputHelpButton = new JButton(new AbstractAction("Function Input Help") {
 			public void actionPerformed(ActionEvent e) {
 				try {
@@ -337,83 +381,35 @@ public class Window extends JFrame {
 				}					
 			}			
 		});
-		add(inputHelpButton);
 		
+		// Labels and Textfields for inputting the upper and lower limits
 		lowerLabel = new JLabel("Lower limit (a):");
-		add(lowerLabel);	
-		lowerTextField = new JTextField(4);
-		add(lowerTextField);
-		
-		upperLabel = new JLabel("Upper limit (b):");
-		add(upperLabel);
-		upperTextField = new JTextField(4);
-		add(upperTextField);
+		lowerLabel.setFont(labelFont);
+		lowerTextField = new JTextField();		
+		upperLabel = new JLabel("Upper limit (b):");	
+		upperLabel.setFont(labelFont);
+		upperTextField = new JTextField();
 		
 		// drop down list for determining the type of interval selection
 		// when changing nComboStrings, change the ActionListener event below as well
-		String[] nComboStrings = { "Interval Number (n)", "Interval Length (i)" };
-		nComboBox = new JComboBox(nComboStrings);
-		nComboBox.setSelectedIndex(0);
-		nComboBox.addActionListener(new ActionListener() {
+		String[] intervalComboStrings = { "Interval Number (n)", "Interval Length (i)" };
+		intervalComboBox = new JComboBox(intervalComboStrings);
+		intervalComboBox.setFont(labelFont);
+		intervalComboBox.setSelectedIndex(0);
+		intervalComboBox.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String val;
-				val = (String) nComboBox.getSelectedItem();
+				val = (String) intervalComboBox.getSelectedItem();
 				if(val == "Interval Number (n)")
 					intervalSelection = "n";
 				else
 					intervalSelection = "i";
 			}
-		});
-		add(nComboBox);
+		});				
+		intervalTextField = new JTextField();		
 		
-		// nLabel = new JLabel("Enter n:");
-		// add(nLabel);
-		intervalTextField = new JTextField(6);
-		add(intervalTextField);
-		
-		// building the JPanel that includes the method radio button groups
-		methodPanel = new JPanel();
-		
-		// will probably move the generation of all icons into a method and make them 
-		// global variables.
-		ImageIcon trapIcon = new ImageIcon("trapezoidal_image.png");
-		ImageIcon meth2Icon = new ImageIcon("method2_image.png");
-		ImageIcon meth3Icon = new ImageIcon("method3_image.png");
-		
-		//this image is shown based on what method of integration is selected
-		methodImagePanel = new JPanel();
-		methodImagePanel.setLayout(new BorderLayout());
-		methodImage = new JLabel();
-		methodImagePanel.add(methodImage);
-		methodImage.setIcon(trapIcon);
-		add(methodImagePanel);
-		
-		// these are the JRadioButtons that are used for integration method selection
-		methodButton1 = new JRadioButton(new AbstractAction("Trapezoidal") {
-			public void actionPerformed(ActionEvent e) {
-				methodSelection = e.getActionCommand();
-				methodImage.setIcon(trapIcon);
-			}			
-		});
-		// default selection
-		methodButton1.setSelected(true);
-		
-		methodButton2 = new JRadioButton(new AbstractAction("Method 2") {
-			public void actionPerformed(ActionEvent e) {
-				methodSelection = e.getActionCommand();
-				methodImage.setIcon(meth2Icon);
-			}			
-		});
-		
-		methodButton3 = new JRadioButton(new AbstractAction("Method 3") {
-			public void actionPerformed(ActionEvent e) {
-				methodSelection = e.getActionCommand();
-				methodImage.setIcon(meth3Icon);
-			}			
-		});
-	
 		// creating graphCheckButton to determine whether a graph will be plotted
-		final JCheckBox graphCheckBox = new JCheckBox("Plot Graph");	
+		JCheckBox graphCheckBox = new JCheckBox("Plot Graph");	
 		
 		// this button gets data from all the textfields, checks if it is accurate,
 		// then performs integration if there are no errors.
@@ -473,42 +469,146 @@ public class Window extends JFrame {
 						barData.clear();
 						negBarData.clear();
 						// lineSeries.clear();
-						// barSeries.clear();
-						integrateTrapezoid(userFunc);
-						generateGraph();
-						//	generateXYGraph();	
+						// barSeries.clear();						
+						if(graphCheckBox.isSelected()) {
+							integrateTrapezoid(userFunc);
+							generateGraph();	
+							generateXYGraph();
+						} else {
+							integrateTrapezoid(userFunc);
+							answerLabel.setText(solvedValue);
+						}
+								
 					} catch (Exception e1) {
 						e1.printStackTrace();
 					}
-					integralDisplay.setText(solvedValue);
 				}
 			}
 		});
+		integrateButton.setFont(new Font(integrateButton.getFont().getName(), Font.PLAIN, 16));
 		
-		methodButtonGroup = new ButtonGroup();
-		methodButtonGroup.add(methodButton1);
-		methodButtonGroup.add(methodButton2);
-		methodButtonGroup.add(methodButton3);
-		add(methodButton1);
-		add(methodButton2);
-		add(methodButton3);		
-		//add(methodPanel);
-		
-		add(integrateButton);
-		add(graphCheckBox);
-
-		// test variable
-		add(integralDisplay);
-		// error messages
+		// Error Message Display Label
 		errorDisplay = new JLabel();
-		errorDisplay.setForeground(Color.RED);
-		add(errorDisplay);
+		errorDisplay.setForeground(Color.RED);	
 		
-		setSize(600, 520);
-		setTitle("Integration Tool by Tyler Estro");
-		setDefaultCloseOperation(EXIT_ON_CLOSE);		
+		// Labels that display the solution
+		solutionLabel = new JLabel("Solution:");
+		solutionLabel.setFont(new Font(solutionLabel.getFont().getName(), Font.BOLD, 15));
+		answerLabel = new JLabel("");
+		answerLabel.setFont(labelFont);
 		
-		// temporary layout
-		setLayout(new FlowLayout());
+		// Main Frame General Settings
+		setSize(760, 680);
+		setTitle("Definite Integral Calculator by Tyler Estro");
+		setDefaultCloseOperation(EXIT_ON_CLOSE);	
+		
+/////// Layout Manager ///////
+		setLayout(new GridBagLayout());
+		GridBagConstraints c = new GridBagConstraints();
+		
+		// Title Label
+		c.fill = GridBagConstraints.VERTICAL;
+		c.anchor = GridBagConstraints.CENTER;
+		c.weightx = 0.0;
+		c.weighty = 1.0;
+		c.gridwidth = 2;
+		c.gridx = 1;
+		c.gridy = 0;
+		add(titleLabel, c);		
+		
+		// TabbedPane for Integration Method Selection
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.weightx = 0.0;
+		c.weighty = 1.0;
+		c.gridx = 1;
+		c.gridy = 1;
+		add(methodTabbedPane, c);
+		
+		// Sample Equation Image Panel
+		c.fill = GridBagConstraints.VERTICAL;
+		c.gridx = 0;
+		c.gridy= 2;
+		c.gridwidth = 1;
+		add(equationImagePanel, c);
+		
+		// Function Input TextField Label
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.gridx = 1;
+		c.insets = new Insets(0,4,0,0);
+		add(funcLabel, c);
+		
+		// Function Input TextField
+		c.gridx = 2;
+		add(funcTextField, c);
+		
+		// Button to Access Input Help
+		c.gridx = 3;
+		add(inputHelpButton, c);
+		
+		// Upper Limit TextField Label
+		c.gridx = 0;
+		c.gridy = 3;
+		c.weighty = .2;
+		c.fill = GridBagConstraints.VERTICAL;
+		c.anchor = GridBagConstraints.LINE_END;
+		add(upperLabel, c);
+		
+		// Upper Limit TextField
+		c.gridx = 1;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.anchor = GridBagConstraints.LINE_START;
+		add(upperTextField, c);
+		
+		// ComboBox to Select Interval Mode (i or n)
+		c.gridx = 2;
+		add(intervalComboBox, c);		
+		
+		// Interval Value TextField
+		c.gridx = 3;
+		add(intervalTextField, c);	
+		
+		// Lower Limit TextField Label
+		c.gridx = 0;
+		c.gridy = 4;
+		c.weighty = 1;
+		c.fill = GridBagConstraints.NONE;
+		c.anchor = GridBagConstraints.FIRST_LINE_END;
+		add(lowerLabel, c);
+		
+		// Lower Limit TextField
+		c.gridx = 1;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.anchor = GridBagConstraints.FIRST_LINE_START;
+		add(lowerTextField, c);
+		
+		// Integrate Button
+		c.anchor = GridBagConstraints.CENTER;
+		c.fill = GridBagConstraints.BOTH;
+		c.gridx = 1;
+		c.gridy = 5;
+		c.gridwidth = 2;
+		add(integrateButton, c);
+		
+		// Plot Graph Checkbox
+		c.gridx = 3;
+		c.gridwidth = 1;
+		add(graphCheckBox, c);
+		
+		// Error Messages
+		c.fill = GridBagConstraints.VERTICAL;
+		c.weightx = 0;
+		c.weighty = 1.0;
+		c.gridx = 0;
+		c.gridy = 6;
+		c.gridwidth = 4;
+		add(errorDisplay, c);		
+				
+		// Solution Display
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.gridx = 1;
+		c.gridy = 7;
+		add(solutionLabel, c);
+		c.gridx = 2;
+		add(answerLabel, c);		
 	}
 }
