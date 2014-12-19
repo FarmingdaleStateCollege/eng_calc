@@ -15,32 +15,27 @@ package senior_project;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+
 import net.sourceforge.jeval.*;
 
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.CategoryAxis;
 import org.jfree.chart.axis.NumberAxis;
-import org.jfree.chart.axis.NumberTickUnit;
-import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.DatasetRenderingOrder;
 import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.chart.renderer.category.LineAndShapeRenderer;
-import org.jfree.chart.renderer.xy.XYBarRenderer;
-import org.jfree.chart.renderer.xy.XYItemRenderer;
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
 
 
 public class Window extends JFrame {
@@ -56,13 +51,11 @@ public class Window extends JFrame {
 	private JLabel rombergLabel;
 	private JLabel solutionLabel;
 	private JLabel answerLabel;
-	private JLabel graphSolutionLabel;
-	private JLabel graphAnswerLabel;
 	private JTextField funcTextField;
 	private JTextField lowerTextField;
 	private JTextField upperTextField;
 	private JTextField intervalTextField;
-	private JCheckBox graphCheckBox;
+	private JCheckBox graphCheckBox = new JCheckBox("Plot Graph");
 	private JComboBox intervalComboBox;
 	private JPanel equationImagePanel;
 	private JButton inputHelpButton;
@@ -71,8 +64,6 @@ public class Window extends JFrame {
 	private JPanel simpsonTab;
 	private JPanel rombergTab;
 	private JTabbedPane methodTabbedPane;	
-	private String methodSelection = "Trapezoidal";
-	// default selection for determining interval length/number
 	private String intervalSelection = "n";
 	private String solvedValue;
 	private String upperLimit;
@@ -80,52 +71,17 @@ public class Window extends JFrame {
 	private String userFunc;
 	private String intervalValue;
 	private String errorString;
+	private String[] intervalComboStrings; 	
 	private JFrame thisFrame = this;
 	private final double EPSILON = 1E-14;
+	private final String xHolder = "1000";
 	private Evaluator jEval = new Evaluator();
 	DefaultCategoryDataset lineData = new DefaultCategoryDataset();	
     DefaultCategoryDataset barData = new DefaultCategoryDataset();
     DefaultCategoryDataset negBarData = new DefaultCategoryDataset();
-    XYSeries lineSeries = new XYSeries("line");
-    XYSeries barSeries = new XYSeries("bar");
-    XYSeries negBarSeries = new XYSeries("negBar");
 	
-	// graph xychart attempt
-    // not going to use this method most likely. leaving it in for now
-	public void generateXYGraph() throws IOException {        
-	    NumberAxis domainAxis = new NumberAxis("");
-	    domainAxis.setLowerBound(Double.parseDouble(lowerLimit));
-	    domainAxis.setUpperBound(Double.parseDouble(upperLimit));
-	    ValueAxis rangeAxis = new NumberAxis("");
-	    
-	    XYSeriesCollection dataBar = new XYSeriesCollection();
-	    dataBar.addSeries(barSeries);
-	    XYItemRenderer barRenderer = new XYBarRenderer(0);
-	    XYPlot plot = new XYPlot(dataBar, domainAxis, rangeAxis, barRenderer);
-	     
-	    XYSeriesCollection dataLine = new XYSeriesCollection();
-	    dataLine.addSeries(lineSeries);
-	    XYLineAndShapeRenderer lineRenderer = new XYLineAndShapeRenderer(true, true); 
-	    plot.setDataset(1, dataLine);
-	    plot.setRenderer(1, lineRenderer);
-
-	    plot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
-	    NumberAxis domain = (NumberAxis) plot.getDomainAxis();
-	    domain.setTickUnit(new NumberTickUnit(0.5));     
-	    domain.setVerticalTickLabels(true);	 
-	    
-        //chart
-        JFreeChart chart = new JFreeChart(plot);
-        chart.setTitle("Definite Integral Graph");
-        chart.removeLegend();
-        // creating a jpeg of the chart
-        int width = 640; // Width of the image 
-        int height = 480; // Height of the image  
-        File lineChart = new File( "LineChart2.jpeg" ); 
-        ChartUtilities.saveChartAsJPEG(lineChart , chart, width ,height);
-	}   
 	
-	// graphing with a CategoryPlot setup
+	// Method that handles setting up the graph
 	public void generateGraph() throws IOException {        
         BarRenderer barRender = new BarRenderer();
         barRender.setSeriesPaint(0, Color.blue);
@@ -161,16 +117,12 @@ public class Window extends JFrame {
         File lineChart = new File( "graph.jpeg" ); 
         ChartUtilities.saveChartAsJPEG(lineChart , chart, width ,height);
         // creating the pop-up window (JOptionPane) containing the graph
-        graphSolutionLabel = new JLabel("Solution:");
-        graphAnswerLabel = new JLabel(solvedValue);
 		try {
 			BufferedImage graphImage = ImageIO.read(lineChart);
 			JLabel graphLabel = new JLabel(new ImageIcon(graphImage));
-			JOptionPane graphPane = new JOptionPane();
-			graphPane.showMessageDialog(thisFrame, graphLabel, 
+			JOptionPane.showMessageDialog(thisFrame, graphLabel, 
 					"Definite Integral Graph", JOptionPane.PLAIN_MESSAGE, null);
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 	}
@@ -221,10 +173,8 @@ public class Window extends JFrame {
     // this method checks if the user defined function is valid and replaces
     // some chars to make things easier on the user
     private boolean isValidFunction() {
-    	// using replace to ease user input
-    	// replaced x with that number because JEval is being difficult
-    	userFunc = userFunc.replace("x", "0000000000001000000000000");
-    	userFunc = userFunc.replace("X", "0000000000001000000000000");
+    	userFunc = userFunc.replace("x", xHolder);
+    	userFunc = userFunc.replace("X", xHolder);
     	userFunc = userFunc.replace("E", "#{E}");
     	userFunc = userFunc.replace("PI", "#{PI}");
     	try {
@@ -238,7 +188,7 @@ public class Window extends JFrame {
 	// replaces the number that replaced x with the desired number to evaluate with
     // then evaluates the function at that value
 	private double evalFunc(String num, String func) throws Exception {
-		func = userFunc.replace("0000000000001000000000000", num);
+		func = userFunc.replace(xHolder, num);
 		func = jEval.evaluate(func);
 		return jEval.getNumberResult(func);
 	}
@@ -250,73 +200,170 @@ public class Window extends JFrame {
 	private void integrateTrapezoid(String func) throws Exception {
 		double a = Double.parseDouble(lowerLimit);
 		double b = Double.parseDouble(upperLimit);
-		double h;
-		double val;
+		double val = 0;
+		double h, num;
 		if (intervalSelection == "n") {
-			double xi, num;
+			double xi;
 			int n = Integer.parseInt(intervalValue);
-			val = 0;
 			h = (b - a) / n;
 			for(int i = 0;i <= n;i++) {
 				xi = a + (i * h);
 				num = evalFunc(String.valueOf(xi), userFunc);
-				System.out.println("keke: " + xi);
-				// these lines are for the generating an XYSeries graph
-				lineSeries.add(num,xi);
-				barSeries.add(num,xi);
-				
-				lineData.addValue(num, "f(x)", String.valueOf(xi));
-				// needed to have the same number of categories for these bars to
-				// line up properly. if func evals to positive then barData gets the
-				// value while negbar gets 0. other way around if func is neg.
-				if(num >= 0) {
-					barData.addValue(num, "f(x)", String.valueOf(xi));
-					negBarData.addValue(0, "f(x)", String.valueOf(xi));
-				} else {
-					barData.addValue(0, "f(x)", String.valueOf(xi));
-					negBarData.addValue(num, "f(x)", String.valueOf(xi));										
+				if (graphCheckBox.isSelected()) {
+					lineData.addValue(num, "f(x)", String.valueOf(xi));
+					if (i > 0) {
+						if (num >= 0) {
+							barData.addValue(num, "f(x)", String.valueOf(xi));
+							negBarData.addValue(0, "f(x)", String.valueOf(xi));
+						} else {
+							barData.addValue(0, "f(x)", String.valueOf(xi));
+							negBarData.addValue(num, "f(x)", String.valueOf(xi));
+						}
+					}
 				}
 				if(i == 0 || i == n) {
 					val += num;
-					System.out.println("Val += " + "f(" + xi + ") = " + val);
 				} else {
 					val += 2 * num;
-					System.out.println("Val += " + "2f(" + xi + ") = " + val);
 				}
 			}
-			System.out.println("Val = " + (h/2) + " * " + val + " = " + 
-					(h/2)*val);
 			val = (h / 2) * val;
-		} else {
-			val = 0;						
-			double i = Double.parseDouble(intervalValue);			
+		} else {						
+			double i = Double.parseDouble(intervalValue);
+			boolean uneven = false;
 			h = (b - a);
-			System.out.println("h = " + h);
-			System.out.println("i = " + i);
-			System.out.println("h % n = " + (h % i) );
+			double aX = (h % 1);
+			double bX = b;
+			double numX = 0;
 			// using modulus to check for an extra segment at the end
 			if((h % i) > 0) {
-				System.out.println("Adding extra segment");
-				val += ((h % i) / 2) * (evalFunc(String.valueOf(b - (h % i)), userFunc)
-						+ evalFunc(String.valueOf(b), userFunc));
-				System.out.println("Val += " + ((h%i)/2) + " * " + "(f(" + (b - h % i) + 
-						") + f(" + b + ")) = " + val);				
+				aX = (h % i);
+				bX = b;
+				numX = (aX / 2) * (evalFunc(String.valueOf(bX - aX), userFunc)
+						+ evalFunc(String.valueOf(bX), userFunc));
+				val += numX;
 				b -= (h % i);
+				uneven = true;
 			}
-			System.out.println("i = " + i);
-			System.out.println("a = " + a);
-			System.out.println("b = " + b);	
 			// using constant EPSILON to compare doubles since doubles are not precise
 			for(double j = a;Math.abs(b-j + EPSILON) >= i;j+=i) {
-				System.out.println("j = " + j);
-				val += (i/2) * (evalFunc(String.valueOf(j), userFunc) + 
+				num = (i/2) * (evalFunc(String.valueOf(j), userFunc) + 
 						evalFunc(String.valueOf(j + i), userFunc));
-				System.out.println("Val += " + (i/2) + " * " + "f(" + j + ") + f( " +
-						(j+i) + ") = " + val);
+				val += num;
+				lineData.addValue(evalFunc(String.valueOf(j+i), userFunc), "f(x)",
+						String.valueOf((j + i)));
+				if (evalFunc(String.valueOf(j + i), userFunc) >= 0) {
+					barData.addValue(evalFunc(String.valueOf(j + i), userFunc),
+							"f(x)", String.valueOf(j + i));
+					negBarData.addValue(0, "f(x)", String.valueOf(j + i));
+				} else {
+					barData.addValue(0, "f(x)", String.valueOf(j + i));
+					negBarData.addValue(evalFunc(String.valueOf(j + i), userFunc), 
+							"f(x)", String.valueOf(j + i));
+				}												
+			}
+			// had to add this value at the end due to limitations in the graphing setup
+			if(uneven == true && graphCheckBox.isSelected()) {
+				lineData.addValue(evalFunc(String.valueOf(bX), userFunc), "f(x)", 
+						String.valueOf(bX));
+				if (evalFunc(String.valueOf(bX), userFunc) >= 0) {
+					barData.addValue(evalFunc(String.valueOf(bX), userFunc), "f(x)", 
+							String.valueOf(bX));
+					negBarData.addValue(0, "f(x)", String.valueOf(bX));
+				} else {
+					barData.addValue(0, "f(x)", String.valueOf(bX));
+					negBarData.addValue(evalFunc(String.valueOf(bX), userFunc), "f(x)", 
+							String.valueOf(bX));
+				}	
 			}
 		}
-		solvedValue = String.valueOf(val);	
-		System.out.println(solvedValue);
+		solvedValue = String.valueOf(val);
+	}
+	
+	private void integrateSimpson(String func) throws Exception {
+		double a = Double.parseDouble(lowerLimit);
+		double b = Double.parseDouble(upperLimit);
+		double val = 0;
+		double h, xi, num;
+		int n = Integer.parseInt(intervalValue);
+		h = (b - a) / n;
+		for (int i = 0; i <= n;i++) {
+			xi = a + (i * h);
+			num = evalFunc(String.valueOf(xi), userFunc);
+			if (graphCheckBox.isSelected()) {
+				lineData.addValue(num, "f(x)", String.valueOf(xi));
+				if (i > 0) {
+					if (num >= 0) {
+						barData.addValue(num, "f(x)", String.valueOf(xi));
+						negBarData.addValue(0, "f(x)", String.valueOf(xi));
+					} else {
+						barData.addValue(0, "f(x)", String.valueOf(xi));
+						negBarData.addValue(num, "f(x)", String.valueOf(xi));
+					}
+				}
+			}
+			if (i == 0 || i == n) {
+				val += num;
+			} else if (i % 2 == 0) {
+				val += (2 * num);				
+			} else {
+				val += (4 * num);
+			}
+		}		
+		val = (h / 3) * val;
+		solvedValue = String.valueOf(val);
+	}	
+	
+	private void integrateRomberg(String func) throws Exception {
+		double a = Double.parseDouble(lowerLimit);
+		double b = Double.parseDouble(upperLimit);
+		int n = Integer.parseInt(intervalValue);
+		int n2 = 0;
+		double h = 0;
+		double r[][] = new double[n+1][n+1];
+		r[0][0] = ( (.5) * ((b-a)/1) * (evalFunc(String.valueOf(a), userFunc) +
+				evalFunc(String.valueOf(b), userFunc)) );
+		for(int i=1;i <= n;i++) {
+			n2 = (int) Math.pow(2, i); // number of segments
+			h = (b-a) / n2; // segment length
+			for(int j = 0;j <= i;j++) {
+				if(j == 0) {
+					for(double k = 0;Math.abs(b-k + EPSILON) >= h;k+=h) {
+						if(k == 0) 
+							r[i][0] += evalFunc(String.valueOf(k), userFunc);
+						else
+							r[i][0] += 2.0 * evalFunc(String.valueOf(k), userFunc);
+					}
+					r[i][0] += evalFunc(String.valueOf(b), userFunc);					
+					r[i][0] = (0.5) * h * r[i][0];
+				}
+				else
+				{
+				r[i][j] = ((Math.pow(4.0, j) * r[i][j-1]) - r[i-1][j-1]) / 
+						(Math.pow(4.0,j) - 1.0);
+				}
+				solvedValue = String.valueOf(r[i][j]);
+			}
+		}
+		if (graphCheckBox.isSelected()) {
+			for (int i = 0;i <= n2; i++) {
+				double xi, num;
+				xi = a + (i * h);
+				num = evalFunc(String.valueOf(xi), userFunc);
+				if (graphCheckBox.isSelected()) {
+					lineData.addValue(num, "f(x)", String.valueOf(xi));
+					if (i > 0) {
+						if (num >= 0) {
+							barData.addValue(num, "f(x)", String.valueOf(xi));
+							negBarData.addValue(0, "f(x)", String.valueOf(xi));
+						} else {
+							barData.addValue(0, "f(x)", String.valueOf(xi));
+							negBarData.addValue(num, "f(x)", String.valueOf(xi));
+						}
+					}
+				}
+			}
+		}
 	}
 	
 	public Window() {
@@ -329,8 +376,8 @@ public class Window extends JFrame {
 
 		// Sample images of each integration method
 		ImageIcon trapImage = new ImageIcon("trapezoidal_image.png");
-		ImageIcon simpsonImage = new ImageIcon("method2_image.png");
-		ImageIcon rombergImage = new ImageIcon("method3_image.png");
+		ImageIcon simpsonImage = new ImageIcon("simpson_image.png");
+		ImageIcon rombergImage = new ImageIcon("romberg_image.png");
 		
 		// Label and Panel containing the Image for the Trapezoidal integration method
 		trapLabel = new JLabel(trapImage);		
@@ -353,6 +400,20 @@ public class Window extends JFrame {
 		methodTabbedPane.addTab( "Trapezoidal", trapTab );
 		methodTabbedPane.addTab( "Simpson", simpsonTab );
 		methodTabbedPane.addTab( "Romberg", rombergTab );
+
+	    methodTabbedPane.addChangeListener(new ChangeListener() {
+	        public void stateChanged(ChangeEvent e) {
+	        	switch(methodTabbedPane.getSelectedIndex()) {
+	        	default:
+	        		intervalComboBox.setSelectedIndex(0);
+	        		break;
+	        	case 2:
+	        		intervalComboBox.setSelectedIndex(2);
+	        		break;
+	        	}
+	        }
+	    });
+	
 		
 		// Panel and Image for the sample equation image
 		equationImagePanel = new JPanel();
@@ -372,11 +433,9 @@ public class Window extends JFrame {
 				try {
 					BufferedImage inputHelpImage = ImageIO.read(new File("inputHelp.png"));
 					JLabel imageLabel = new JLabel(new ImageIcon(inputHelpImage));
-					JOptionPane inputHelp = new JOptionPane();
-					inputHelp.showMessageDialog(thisFrame, imageLabel, 
+					JOptionPane.showMessageDialog(thisFrame, imageLabel, 
 							"Function Input Help", JOptionPane.PLAIN_MESSAGE, null);
 				} catch (IOException e1) {
-					// TODO Auto-generated catch block
 					e1.printStackTrace();
 				}					
 			}			
@@ -392,7 +451,10 @@ public class Window extends JFrame {
 		
 		// drop down list for determining the type of interval selection
 		// when changing nComboStrings, change the ActionListener event below as well
-		String[] intervalComboStrings = { "Interval Number (n)", "Interval Length (i)" };
+		intervalComboStrings = new String[3];
+		intervalComboStrings[0] = "Interval Number (n)";
+		intervalComboStrings[1] = "Interval Length (i)";
+		intervalComboStrings[2] = "Iterations (I)";
 		intervalComboBox = new JComboBox(intervalComboStrings);
 		intervalComboBox.setFont(labelFont);
 		intervalComboBox.setSelectedIndex(0);
@@ -402,21 +464,20 @@ public class Window extends JFrame {
 				val = (String) intervalComboBox.getSelectedItem();
 				if(val == "Interval Number (n)")
 					intervalSelection = "n";
-				else
+				else if(val == "Interval Length (i)")
 					intervalSelection = "i";
+				else
+					intervalSelection = "k";
 			}
 		});				
 		intervalTextField = new JTextField();		
-		
-		// creating graphCheckButton to determine whether a graph will be plotted
-		JCheckBox graphCheckBox = new JCheckBox("Plot Graph");	
-		
-		// this button gets data from all the textfields, checks if it is accurate,
-		// then performs integration if there are no errors.
+			
+		// All error handling for input is done here before integration methods are called
 		integrateButton = new JButton(new AbstractAction("Perform Integration") {
 			public void actionPerformed(ActionEvent e) {
 				getData();
 				errorDisplay.setText("");
+				answerLabel.setText("");
 				if(lowerLimit.equals("") | upperLimit.equals("") | intervalValue.equals("") |
 						userFunc.equals("")) {
 					errorString = "All fields must be filled out.";
@@ -442,12 +503,55 @@ public class Window extends JFrame {
 							+ " upper limit (b).";
 					errorDisplay.setText(errorString);
 				}
-				else if (intervalSelection == "i" & !isDouble(intervalValue)) {
+				else if (methodTabbedPane.getSelectedIndex() == 0 &&
+						intervalSelection == "k") {
+					errorString = "Iterations (I) is not a valid selection for"
+							+ " trapezoidal integration";
+					errorDisplay.setText(errorString);
+				}
+				else if (methodTabbedPane.getSelectedIndex() == 1 &&
+						(intervalSelection == "k" || intervalSelection == "i")) {
+					errorString = "Only interval number (n) is a valid selection for"
+							+ " Simpson integration";
+					errorDisplay.setText(errorString);
+				}
+				else if (methodTabbedPane.getSelectedIndex() == 2 &&
+						intervalSelection != "k") {
+					errorString = "Only iterations (I) is a valid selection for"
+							+ " Romberg integration";
+					errorDisplay.setText(errorString);
+				}
+				else if (methodTabbedPane.getSelectedIndex() == 1 &&
+						!isWholeNumber(intervalValue)) {
+					errorString = "The interval number (n) must be an even whole"
+							+ " number that is greater than 0 when using Simpson integration";
+					errorDisplay.setText(errorString);
+				}
+				else if (methodTabbedPane.getSelectedIndex() == 1 &&
+						(Integer.parseInt(intervalValue) % 2) > 0) {
+					errorString = "The interval number (n) must be an even whole"
+							+ " number that is greater than 0 when using Simpson integration";
+					errorDisplay.setText(errorString);
+				}
+				else if (methodTabbedPane.getSelectedIndex() == 2 &&
+						!isWholeNumber(intervalValue)) {
+					errorString = "The number of iterations (I) must be a whole"
+							+ " number between 1 and 6 when using Romberg integration";
+					errorDisplay.setText(errorString);
+				}
+				else if (methodTabbedPane.getSelectedIndex() == 2 &&
+						Integer.parseInt(intervalValue) < 1 |
+						Integer.parseInt(intervalValue) > 6) {
+					errorString = "The number of iterations (I) must be a whole"
+							+ " number between 1 and 6 when using Romberg integration";
+					errorDisplay.setText(errorString);
+				}				
+				else if (intervalSelection == "i" && !isDouble(intervalValue)) {
 					errorString = "The interval number (i) must be a valid, positive decimal"
 							+ " number or integer.";
 					errorDisplay.setText(errorString);
 				}
-				else if (intervalSelection == "n" & !isWholeNumber(intervalValue)) {
+				else if (intervalSelection == "n" && !isWholeNumber(intervalValue)) {
 					errorString = "The interval number (n) must be a whole number greater"
 							+ " than zero.";
 					errorDisplay.setText(errorString);
@@ -467,18 +571,27 @@ public class Window extends JFrame {
 					try {
 						lineData.clear();
 						barData.clear();
-						negBarData.clear();
-						// lineSeries.clear();
-						// barSeries.clear();						
-						if(graphCheckBox.isSelected()) {
-							integrateTrapezoid(userFunc);
-							generateGraph();	
-							generateXYGraph();
-						} else {
-							integrateTrapezoid(userFunc);
-							answerLabel.setText(solvedValue);
-						}
-								
+						negBarData.clear();						
+						switch(methodTabbedPane.getSelectedIndex()) {
+							case 0:
+								integrateTrapezoid(userFunc);
+								if(graphCheckBox.isSelected())
+									generateGraph();	
+								answerLabel.setText(solvedValue);
+								break;
+							case 1:
+								integrateSimpson(userFunc);
+								if(graphCheckBox.isSelected())
+									generateGraph();
+								answerLabel.setText(solvedValue);
+								break;
+							case 2:
+								integrateRomberg(userFunc);
+								if(graphCheckBox.isSelected())
+									generateGraph();
+								answerLabel.setText(solvedValue);
+								break;
+						}	
 					} catch (Exception e1) {
 						e1.printStackTrace();
 					}
